@@ -9,10 +9,11 @@ import { useEffect, useState } from "react";
 import { getLocations } from "@/app/actions/locationActions";
 import type { Location } from "@/types";
 import { useLoading } from "../providers/LoadingProvider";
-import MapHeaderInfo from "./MapHeaderInfo";
-import MapFilterBar from "./MapFilterBar";
+import MapInfo from "./MapInfo";
 import MapFocusOnly from "./MapFocusOnly";
-import BrowserZoomController from "./BrowserZoomController";
+import { tileLayers } from "./TileLayerSwitcher";
+import TileLayerSwitcher from "./TileLayerSwitcher";
+import MapFilterBar from "./MapFilterBar";
 
 const worldPolygon: [number, number][] = [
   [90, -180],
@@ -30,6 +31,11 @@ export default function MapView() {
   ]);
   const [searchQuery, setSearchQuery] = useState("");
   const { showLoading, hideLoading } = useLoading();
+  const [currentTileId, setCurrentTileId] = useState("esri-satellite");
+
+  // Tìm layer hiện tại
+  const currentLayer =
+    tileLayers.find((l) => l.id === currentTileId) || tileLayers[0];
 
   useEffect(() => {
     const fetch = async () => {
@@ -99,20 +105,15 @@ export default function MapView() {
   return (
     <div className="relative w-full h-screen">
       {/* Header Info */}
-      <MapHeaderInfo
+      <MapInfo
         numberOfFilteredLocation={filteredLocations.length}
         numberOfLocation={locations.length}
       />
 
-      {/* Filter Panel */}
-      {/* <MapFilterPanel
-        selectedCategories={selectedCategories}
-        onSelectedCategory={handleSelectCategory}
-        searchQuery={searchQuery}
-        onSearchQuery={setSearchQuery}
-        resultCount={filteredLocations.length}
-        totalCount={locations.length}
-      /> */}
+      <TileLayerSwitcher
+        currentTileId={currentTileId}
+        onTileChange={(id: string) => setCurrentTileId(id)}
+      />
 
       <MapFilterBar
         selectedCategories={selectedCategories}
@@ -141,7 +142,7 @@ export default function MapView() {
           onSearchQuery={setSearchQuery}
           filteredLocations={filteredLocations}
         />
-        <TileLayer
+        {/* <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           // url="https://tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=a963961e90654948a89a48c6d61dcf88"
           // url="https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg"
@@ -149,6 +150,12 @@ export default function MapView() {
 
           maxNativeZoom={19}
           zoomOffset={0}
+        /> */}
+        <TileLayer
+          key={currentTileId} // quan trọng: force re-render khi đổi tile
+          url={currentLayer.url}
+          maxZoom={25}
+          maxNativeZoom={currentLayer.maxNativeZoom || 20}
         />
         <Polygon
           positions={[worldPolygon, ctuCampusCoords]}
