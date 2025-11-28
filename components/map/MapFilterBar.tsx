@@ -42,7 +42,7 @@ export const categories: Category[] = [
     slug: "all",
     name: "Tất cả",
     icon: MapPin,
-    color: "bg-gray-600",
+    color: "#49525f",
   },
   {
     id: "8cb4631a-93dc-4113-ab0b-29058b9975c8",
@@ -221,9 +221,7 @@ export default function MapFilterBar({
 
   return (
     <div className="absolute top-3 left-[52px] w-[calc(100vw-64px)] z-[10001] flex flex-col items-center pointer-events-none">
-      {/* Search + Filter Row */}
       <div className="w-full pointer-events-auto rounded-lg shadow-xl gap-3 mx-4 flex flex-col md:flex-row md:items-center ">
-        {/* Search Box */}
         <div className="relative">
           <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
           <input
@@ -231,7 +229,7 @@ export default function MapFilterBar({
             placeholder="Tìm kiếm..."
             value={searchQuery}
             onChange={(e) => onSearchQuery(e.target.value)}
-            className="pl-10 pr-3 py-2 w-64 bg-gray-50 rounded-full text-sm w-[calc(100vw-64px)] md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="pl-10 pr-6 py-2 w-64 bg-gray-50 rounded-full text-sm w-[calc(100vw-64px)] md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {searchQuery && (
             <button
@@ -243,7 +241,6 @@ export default function MapFilterBar({
           )}
         </div>
 
-        {/* Category Chips */}
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide snap-x no-scrollbar">
           {categories.map((cat) => {
             const Icon = cat.icon;
@@ -257,9 +254,12 @@ export default function MapFilterBar({
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all snap-center",
                   isActive
-                    ? `${cat.color} text-white shadow-md`
+                    ? `bg-${cat.color} text-white shadow-md`
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 )}
+                style={{
+                  backgroundColor: isActive ? cat.color : "",
+                }}
               >
                 <Icon className="w-4 h-4" />
                 {cat.name}
@@ -274,7 +274,6 @@ export default function MapFilterBar({
         </div>
       </div>
 
-      {/* Active Filter Summary */}
       {(selectedCategories.length > 1 || (activeCategory && searchQuery)) && (
         <div className="mt-3 pointer-events-auto bg-white/95 backdrop-blur rounded-full px-4 py-2 shadow-lg text-sm">
           <span className="text-gray-600">Đang hiển thị:</span>{" "}

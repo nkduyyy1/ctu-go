@@ -25,7 +25,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook để dùng ở bất kỳ đâu
+// Hook to use anywhere
 export function useLoading() {
   const context = useContext(LoadingContext);
   if (!context) {

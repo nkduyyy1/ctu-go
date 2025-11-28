@@ -14,6 +14,13 @@ import MapFocusOnly from "./MapFocusOnly";
 import { tileLayers } from "./TileLayerSwitcher";
 import TileLayerSwitcher from "./TileLayerSwitcher";
 import MapFilterBar from "./MapFilterBar";
+import LocationRoutingPopup from "./LocationRoutingPopup";
+import MapClickHandler from "./MapClickHandler";
+import "leaflet-routing-machine";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+import TempMarker from "./TempMarker";
+import FloatingPlaceCard from "./MapFloatingPlaceCard";
+import DirectionsPanel from "./MapDirectionsPanel";
 
 const worldPolygon: [number, number][] = [
   [90, -180],
@@ -23,6 +30,8 @@ const worldPolygon: [number, number][] = [
 ];
 
 export default function MapView() {
+
+
   const center: [number, number] = [10.0315, 105.7685];
   const [locations, setLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
@@ -33,9 +42,23 @@ export default function MapView() {
   const { showLoading, hideLoading } = useLoading();
   const [currentTileId, setCurrentTileId] = useState("esri-satellite");
 
-  // Tìm layer hiện tại
-  const currentLayer =
-    tileLayers.find((l) => l.id === currentTileId) || tileLayers[0];
+
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [isSelectingDestination, setIsSelectingDestination] = useState(false);
+  const [tempStartPoint, setTempStartPoint] = useState<[number, number] | null>(null);
+
+  const [selectedPoint, setSelectedPoint] = useState<Location | null>(null);
+  const [showDirections, setShowDirections] = useState(false);
+
+  const currentLayer = tileLayers.find((l) => l.id === currentTileId) || tileLayers[0];
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+      () => console.log("Failed to get user location")
+    );
+  }, []);
 
   useEffect(() => {
     const fetch = async () => {
@@ -56,17 +79,12 @@ export default function MapView() {
     fetch();
   }, []);
 
-  // Filter logic
   useEffect(() => {
     let filtered = locations;
-    console.log(locations);
-    console.log({ selectedCategories });
     if (selectedCategories.length > 0) {
       if (selectedCategories.includes("all")) {
-        console.log("first", locations);
         filtered = locations;
       } else {
-        console.log("first");
         filtered = filtered.filter((loc) =>
           selectedCategories.includes(loc.category?.slug || "")
         );
@@ -81,7 +99,6 @@ export default function MapView() {
           loc.description?.toLowerCase().includes(query)
       );
     }
-    console.log(filtered);
     setFilteredLocations(filtered);
   }, [selectedCategories, searchQuery, locations]);
 
@@ -104,7 +121,6 @@ export default function MapView() {
 
   return (
     <div className="relative w-full h-screen">
-      {/* Header Info */}
       <MapInfo
         numberOfFilteredLocation={filteredLocations.length}
         numberOfLocation={locations.length}
@@ -135,6 +151,19 @@ export default function MapView() {
         zoomSnap={0}
         zoomDelta={0.3}
       >
+        <MapClickHandler
+          onNormalClick={(latlng) => {
+            setSelectedPoint({
+              lat: latlng[0],
+              lng: latlng[1],
+              name: `Chấm màu xanh`
+            });
+            setShowDirections(false);
+          }}
+          isSelectingDestination={isSelectingDestination}
+          startPoint={tempStartPoint}
+          showDirectionsPanel={showDirections}
+        />
         <MapFocusOnly
           selectedCategories={selectedCategories}
           onSelectedCategory={handleSelectCategory}
@@ -142,17 +171,8 @@ export default function MapView() {
           onSearchQuery={setSearchQuery}
           filteredLocations={filteredLocations}
         />
-        {/* <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          // url="https://tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=a963961e90654948a89a48c6d61dcf88"
-          // url="https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg"
-          // url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-
-          maxNativeZoom={19}
-          zoomOffset={0}
-        /> */}
         <TileLayer
-          key={currentTileId} // quan trọng: force re-render khi đổi tile
+          key={currentTileId}
           url={currentLayer.url}
           maxZoom={25}
           maxNativeZoom={currentLayer.maxNativeZoom || 20}
@@ -173,7 +193,41 @@ export default function MapView() {
         />
         <UserLocationMarker mockMode hideControlButton={true} />
         <BuildingDetailMarkers locations={filteredLocations} />
+
+        {selectedPoint && (
+          <TempMarker position={[selectedPoint.lat, selectedPoint.lng]} />
+        )}
+        {
+          showDirections && selectedPoint
+          && (
+            <DirectionsPanel
+              locations={locations}
+              selectedPoint={selectedPoint}
+              onClose={() => setShowDirections(false)}
+            />
+          )}
+        {selectedPoint && !showDirections && (
+          <FloatingPlaceCard
+            latlng={[selectedPoint.lat, selectedPoint.lng]}
+            name={selectedPoint.name}
+            image={selectedPoint.image_url?.[0]}
+            onClose={() => setSelectedPoint(null)}
+            onDirections={() => setShowDirections(true)}
+          />
+        )}
       </MapContainer>
+      {selectedLocation && (
+        <LocationRoutingPopup
+          location={selectedLocation}
+          userLocation={userLocation}
+          open={!!selectedLocation}
+          onOpenChange={() => setSelectedLocation(null)}
+          onSelectDestination={(start) => {
+            setTempStartPoint(start);
+            setIsSelectingDestination(true);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -40,13 +40,13 @@ export interface Category {
 }
 
 export interface Location {
-  id: string;
+  id?: string;
   name: string;
-  type: "building" | "dorm" | "restaurant";
-  category: Category | null;
+  type?: "building" | "dorm" | "restaurant";
+  category?: Category | null;
   lat: number;
   lng: number;
-  description: string;
+  description?: string;
   image_url?: string[];
   details?:
     | string
@@ -70,7 +70,7 @@ export interface BuildingDetails {
 }
 
 export interface Path {
-  id: string;
+  id?: string;
   name: string;
   coordinates: [number, number][];
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -66,6 +67,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://server.arcgisonline.com" />
       </head>
       <body className={inter.className}>
+        <Toaster />
         <LoadingProvider>{children}</LoadingProvider>
       </body>
     </html>

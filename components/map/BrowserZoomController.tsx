@@ -3,7 +3,7 @@
 import { useMap } from "react-leaflet";
 import { useEffect, useState } from "react";
 
-const MAX_LEAFLET_ZOOM = 18; // Esri chi tiết tới ~19.5 → mình để 20 là đẹp
+const MAX_LEAFLET_ZOOM = 18;
 
 export default function BrowserZoomController() {
   const map = useMap();
@@ -18,21 +18,17 @@ export default function BrowserZoomController() {
       console.log({ currentZoom, isBrowserZoom });
 
       if (currentZoom >= MAX_LEAFLET_ZOOM && !isBrowserZoom) {
-        // Chuyển sang chế độ trình duyệt zoom
         setIsBrowserZoom(true);
-        document.body.style.overflow = "hidden"; // ngăn scroll trang
+        document.body.style.overflow = "hidden";
         map.getContainer().style.transform = "scale(1)";
-        map.scrollWheelZoom.disable(); // tắt scroll Leaflet
+        map.scrollWheelZoom.disable();
         map.doubleClickZoom.disable();
         map.touchZoom.disable();
         map.dragging.disable();
-
-        // Thêm class để CSS zoom toàn trang
         document.documentElement.classList.add("browser-zoom-active");
       }
 
       if (currentZoom < MAX_LEAFLET_ZOOM && isBrowserZoom) {
-        // Quay lại Leaflet zoom
         setIsBrowserZoom(false);
         document.body.style.overflow = "";
         document.documentElement.classList.remove("browser-zoom-active");
@@ -44,7 +40,7 @@ export default function BrowserZoomController() {
     };
 
     map.on("zoomend", handleZoom);
-    handleZoom(); // check lần đầu
+    handleZoom();
 
     return () => {
       map.off("zoomend", handleZoom);

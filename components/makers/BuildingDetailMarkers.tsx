@@ -5,7 +5,7 @@ import { useRef } from "react";
 import type { LatLngExpression } from "leaflet";
 import type { Marker as LeafletMarker } from "leaflet";
 import { MarkerFactory } from "./MarkerFactory";
-import { type Location } from "../../types";
+import { LocationCategory, type Location } from "../../types";
 
 const categoryLabels: Record<string, string> = {
     classroom: "Giảng đường",
@@ -89,9 +89,9 @@ export default function BuildingDetailMarkers({ locations }: { locations: Locati
     return (
         <>
             {detailLocations.map((loc) => {
-                const details = getBuildingDetails(loc.id);
-                const icon = MarkerFactory.create({ name: loc.name, category: loc.category || "other" });
-                const categoryLabel = loc.category ? categoryLabels[loc.category] || "Khác" : "Khác";
+                const details = getBuildingDetails(loc?.id || "");
+                const icon = MarkerFactory.create({ name: loc.name, category: loc.category?.slug as LocationCategory || "other" });
+                const categoryLabel = loc.category ? categoryLabels[loc.category.slug] || "Khác" : "Khác";
 
                 return (
                     <AutoOpenMarker
@@ -119,7 +119,7 @@ export default function BuildingDetailMarkers({ locations }: { locations: Locati
                                     </div>
                                 )}
 
-                                {details && (
+                                {/* {details && (
                                     <>
                                         <div style={{ marginBottom: "12px", paddingBottom: "12px", borderBottom: "1px solid #e5e7eb" }}>
                                             <p style={{ margin: "4px 0", fontSize: 14, color: "#6b7280" }}>
@@ -193,7 +193,7 @@ export default function BuildingDetailMarkers({ locations }: { locations: Locati
                                             </div>
                                         )}
                                     </>
-                                )}
+                                )} */}
                             </div>
                         </Popup>
                     </AutoOpenMarker>
