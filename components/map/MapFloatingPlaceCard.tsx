@@ -1,10 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useDrawRoute } from "@/hooks/useDrawRoute";
 import { X, Navigation, Share2 } from "lucide-react";
 import Image from "next/image";
-import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 interface Props {
@@ -57,7 +55,10 @@ export default function MapFloatingPlaceCard({
                         </button>
 
                         <h3 className="font-medium text-lg">{name}</h3>
-                        <p className="text-sm text-gray-500">Cần Thơ, Việt Nam</p>
+                        <p className="text-sm text-gray-500">Khu II ĐH Cần Thơ</p>
+                        <p className="mt-3 font-mono text-xs bg-gray-100 px-3 py-2 rounded-lg">
+                            {latlng[0].toFixed(6)}, {latlng[1].toFixed(6)}
+                        </p>
 
                         <div className="flex gap-2 mt-3">
                             <Button onClick={onDirections} className="flex-1 h-7 bg-blue-600 hover:bg-blue-700">

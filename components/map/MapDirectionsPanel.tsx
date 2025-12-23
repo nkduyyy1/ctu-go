@@ -14,7 +14,6 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
-import { useMapEvents } from "react-leaflet";
 
 interface Props {
     selectedPoint: Location | null;
@@ -34,7 +33,7 @@ export default function DirectionsPanel({ selectedPoint, locations, onClose }: P
 
     useEffect(() => {
         if (selectedPoint) {
-            setFrom({
+            setTo({
                 name: selectedPoint.name || `${selectedPoint.lat}, ${selectedPoint.lng}`,
                 lat: selectedPoint.lat,
                 lng: selectedPoint.lng,
@@ -43,7 +42,7 @@ export default function DirectionsPanel({ selectedPoint, locations, onClose }: P
     }, [selectedPoint]);
 
     const filteredFrom = useMemo(() => {
-        if (!searchFrom.trim()) return [];
+        if (!searchFrom.trim()) return locations;
         return locations.filter(loc =>
             loc.name.toLowerCase().includes(searchFrom.toLowerCase()) ||
             loc.description?.toLowerCase().includes(searchFrom.toLowerCase())
@@ -51,7 +50,7 @@ export default function DirectionsPanel({ selectedPoint, locations, onClose }: P
     }, [searchFrom, locations]);
 
     const filteredTo = useMemo(() => {
-        if (!searchTo.trim()) return [];
+        if (!searchTo.trim()) return locations;
         return locations.filter(loc =>
             loc.name.toLowerCase().includes(searchTo.toLowerCase()) ||
             loc.description?.toLowerCase().includes(searchTo.toLowerCase())
@@ -81,13 +80,6 @@ export default function DirectionsPanel({ selectedPoint, locations, onClose }: P
         return `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
     };
 
-    useMapEvents(
-        {
-            click: () => {
-                clearRoute();
-            }
-        }
-    )
 
     return createPortal(
         <div className="fixed inset-0 z-[100000] pointer-events-none">
@@ -110,7 +102,7 @@ export default function DirectionsPanel({ selectedPoint, locations, onClose }: P
                             <MapPin className="absolute left-3 bg-white top-1.5 w-6 h-6 text-green-500 z-10" />
                             <Command>
                                 <CommandInput
-                                    placeholder="Nhập điểm đi..."
+                                    placeholder="Nhập điểm xuất phát..."
                                     value={from ? displayText(from) : searchFrom}
                                     onValueChange={(value) => {
                                         if (!from || displayText(from) !== value) {

@@ -43,15 +43,15 @@ export const tileLayers: TileType[] = [
 
 const STORAGE_KEY = "ctugo-preferred-tile";
 
-interface TileLayerSwitcherProps {
+interface MapTileLayerSwitcherProps {
   currentTileId: string;
   onTileChange: (id: string) => void;
 }
 
-export default function TileLayerSwitcher({
+export default function MapTileLayerSwitcher({
   currentTileId,
   onTileChange,
-}: TileLayerSwitcherProps) {
+}: MapTileLayerSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const currentLayer =
     tileLayers.find((l) => l.id === currentTileId) || tileLayers[0];

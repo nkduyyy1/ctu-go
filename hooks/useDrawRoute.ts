@@ -63,12 +63,10 @@ export function useDrawRoute() {
         L.latLng(end[0], end[1]),
       ],
       createMarker: (i: number, waypoint: any) => {
-        const marker = L.marker(waypoint.latLng, {
+        return L.marker(waypoint.latLng, {
           icon: i === 0 ? startIcon : endIcon,
           zIndexOffset: i === 0 ? 1000 : 999,
         });
-
-        return marker;
       },
       lineOptions: {
         styles: [
@@ -80,10 +78,12 @@ export function useDrawRoute() {
           },
         ],
       },
-      router: L.Routing.osrmv1({
-        serviceUrl: "https://router.project-osrm.org/route/v1",
-        profile: "foot",
+
+      router: L.Routing.mapbox(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN!, {
+        profile: "mapbox/walking",
+        language: "vi",
       }),
+
       addWaypoints: false,
       routeWhileDragging: false,
       fitSelectedRoutes: true,
@@ -96,7 +96,6 @@ export function useDrawRoute() {
 
         toast.success(`${km} km • ~${mins} phút đi bộ`);
 
-        // Zoom vừa đẹp
         map.fitBounds(route.coordinates, { padding: [50, 50] });
       })
       .on("routingerror", () => {

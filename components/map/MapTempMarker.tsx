@@ -82,7 +82,7 @@ const markerIcons: Record<Variant, L.DivIcon> = {
   }),
 };
 
-export default function TempMarker({ position, variant = "default" }: Props) {
+export default function MapTempMarker({ position, variant = "default" }: Props) {
   return (
     <Marker position={position} icon={markerIcons[variant]} />
   );

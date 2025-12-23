@@ -11,16 +11,16 @@ import type { Location } from "@/types";
 import { useLoading } from "../providers/LoadingProvider";
 import MapInfo from "./MapInfo";
 import MapFocusOnly from "./MapFocusOnly";
-import { tileLayers } from "./TileLayerSwitcher";
-import TileLayerSwitcher from "./TileLayerSwitcher";
+import { tileLayers } from "./MapTileLayerSwitcher";
+import MapTileLayerSwitcher from "./MapTileLayerSwitcher";
 import MapFilterBar from "./MapFilterBar";
-import LocationRoutingPopup from "./LocationRoutingPopup";
 import MapClickHandler from "./MapClickHandler";
 import "leaflet-routing-machine";
 import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
-import TempMarker from "./TempMarker";
+import MapTempMarker from "./MapTempMarker";
 import FloatingPlaceCard from "./MapFloatingPlaceCard";
 import DirectionsPanel from "./MapDirectionsPanel";
+import MapLocationDetailSidebar from "./MapLocationDetailSidebar";
 
 const worldPolygon: [number, number][] = [
   [90, -180],
@@ -45,8 +45,7 @@ export default function MapView() {
 
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [isSelectingDestination, setIsSelectingDestination] = useState(false);
-  const [tempStartPoint, setTempStartPoint] = useState<[number, number] | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const [selectedPoint, setSelectedPoint] = useState<Location | null>(null);
   const [showDirections, setShowDirections] = useState(false);
@@ -125,8 +124,7 @@ export default function MapView() {
         numberOfFilteredLocation={filteredLocations.length}
         numberOfLocation={locations.length}
       />
-
-      <TileLayerSwitcher
+      <MapTileLayerSwitcher
         currentTileId={currentTileId}
         onTileChange={(id: string) => setCurrentTileId(id)}
       />
@@ -156,12 +154,10 @@ export default function MapView() {
             setSelectedPoint({
               lat: latlng[0],
               lng: latlng[1],
-              name: `Chấm màu xanh`
+              name: `${latlng[0].toFixed(6)}, ${latlng[1].toFixed(6)}`,
             });
             setShowDirections(false);
           }}
-          isSelectingDestination={isSelectingDestination}
-          startPoint={tempStartPoint}
           showDirectionsPanel={showDirections}
         />
         <MapFocusOnly
@@ -192,10 +188,16 @@ export default function MapView() {
           pathOptions={{ color: "green", weight: 1 }}
         />
         <UserLocationMarker mockMode hideControlButton={true} />
-        <BuildingDetailMarkers locations={filteredLocations} />
+        <BuildingDetailMarkers
+          locations={filteredLocations}
+          onLocationSelect={(loc) => {
+            setSelectedLocation(loc);
+            setShowSidebar(true);
+            setShowDirections(false);
+          }} />
 
         {selectedPoint && (
-          <TempMarker position={[selectedPoint.lat, selectedPoint.lng]} />
+          <MapTempMarker position={[selectedPoint.lat, selectedPoint.lng]} />
         )}
         {
           showDirections && selectedPoint
@@ -206,7 +208,7 @@ export default function MapView() {
               onClose={() => setShowDirections(false)}
             />
           )}
-        {selectedPoint && !showDirections && (
+        {selectedPoint && !selectedLocation?.id && !showDirections && (
           <FloatingPlaceCard
             latlng={[selectedPoint.lat, selectedPoint.lng]}
             name={selectedPoint.name}
@@ -215,19 +217,15 @@ export default function MapView() {
             onDirections={() => setShowDirections(true)}
           />
         )}
+        {
+          showSidebar && selectedLocation && (
+            <MapLocationDetailSidebar
+              location={selectedLocation}
+              onClose={() => setShowSidebar(false)}
+            />
+          )
+        }
       </MapContainer>
-      {selectedLocation && (
-        <LocationRoutingPopup
-          location={selectedLocation}
-          userLocation={userLocation}
-          open={!!selectedLocation}
-          onOpenChange={() => setSelectedLocation(null)}
-          onSelectDestination={(start) => {
-            setTempStartPoint(start);
-            setIsSelectingDestination(true);
-          }}
-        />
-      )}
     </div>
   );
 }
