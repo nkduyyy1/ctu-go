@@ -49,6 +49,9 @@ export default function MapView() {
 
   const [selectedPoint, setSelectedPoint] = useState<Location | null>(null);
   const [showDirections, setShowDirections] = useState(false);
+  const [isRoutingMode, setIsRoutingMode] = useState(false);
+  const [isNavigationScreen, setIsNavigationScreen] = useState(false);
+  const [clearRouteSignal, setClearRouteSignal] = useState(0);
 
   const currentLayer = tileLayers.find((l) => l.id === currentTileId) || tileLayers[0];
 
@@ -118,24 +121,41 @@ export default function MapView() {
     }
   };
 
+  const handleRouteStart = () => {
+    setIsRoutingMode(true);
+    setIsNavigationScreen(true);
+    setShowSidebar(false);
+    setShowDirections(false);
+  };
+
+  const handleExitNavigationScreen = () => {
+    setIsNavigationScreen(false);
+    setIsRoutingMode(false);
+    setClearRouteSignal((prev) => prev + 1);
+  };
+
   return (
     <div className="relative w-full h-screen">
-      <MapInfo
-        numberOfFilteredLocation={filteredLocations.length}
-        numberOfLocation={locations.length}
-      />
-      <MapTileLayerSwitcher
-        currentTileId={currentTileId}
-        onTileChange={(id: string) => setCurrentTileId(id)}
-      />
+      {!isNavigationScreen && (
+        <>
+          <MapInfo
+            numberOfFilteredLocation={filteredLocations.length}
+            numberOfLocation={locations.length}
+          />
+          <MapTileLayerSwitcher
+            currentTileId={currentTileId}
+            onTileChange={(id: string) => setCurrentTileId(id)}
+          />
 
-      <MapFilterBar
-        selectedCategories={selectedCategories}
-        onSelectedCategory={handleSelectCategory}
-        searchQuery={searchQuery}
-        onSearchQuery={setSearchQuery}
-        filteredLocations={filteredLocations}
-      />
+          <MapFilterBar
+            selectedCategories={selectedCategories}
+            onSelectedCategory={handleSelectCategory}
+            searchQuery={searchQuery}
+            onSearchQuery={setSearchQuery}
+            filteredLocations={filteredLocations}
+          />
+        </>
+      )}
       <MapContainer
         center={center}
         zoom={17}
@@ -151,14 +171,18 @@ export default function MapView() {
       >
         <MapClickHandler
           onNormalClick={(latlng) => {
+            if (isNavigationScreen) return;
             setSelectedPoint({
               lat: latlng[0],
               lng: latlng[1],
               name: `${latlng[0].toFixed(6)}, ${latlng[1].toFixed(6)}`,
             });
             setShowDirections(false);
+            setIsRoutingMode(false);
           }}
           showDirectionsPanel={showDirections}
+          preserveRouteOnMapClick={isNavigationScreen}
+          clearRouteSignal={clearRouteSignal}
         />
         <MapFocusOnly
           selectedCategories={selectedCategories}
@@ -189,11 +213,14 @@ export default function MapView() {
         />
         <UserLocationMarker mockMode hideControlButton={true} />
         <BuildingDetailMarkers
-          locations={filteredLocations}
+          locations={isRoutingMode ? [] : filteredLocations}
           onLocationSelect={(loc) => {
+            setSelectedPoint(null);
             setSelectedLocation(loc);
             setShowSidebar(true);
             setShowDirections(false);
+            setIsRoutingMode(false);
+            setIsNavigationScreen(false);
           }} />
 
         {selectedPoint && (
@@ -205,10 +232,12 @@ export default function MapView() {
             <DirectionsPanel
               locations={locations}
               selectedPoint={selectedPoint}
+              mapUserCoords={userLocation}
+              onRouteStart={handleRouteStart}
               onClose={() => setShowDirections(false)}
             />
           )}
-        {selectedPoint && !selectedLocation?.id && !showDirections && (
+        {selectedPoint && !selectedLocation?.id && !showDirections && !isNavigationScreen && (
           <FloatingPlaceCard
             latlng={[selectedPoint.lat, selectedPoint.lng]}
             name={selectedPoint.name}
@@ -218,14 +247,37 @@ export default function MapView() {
           />
         )}
         {
-          showSidebar && selectedLocation && (
+          showSidebar && selectedLocation && !isNavigationScreen && (
             <MapLocationDetailSidebar
+              key={selectedLocation.id ?? `${selectedLocation.lat}-${selectedLocation.lng}`}
               location={selectedLocation}
+              locations={locations}
+              mapUserCoords={userLocation}
+              onRouteStart={handleRouteStart}
               onClose={() => setShowSidebar(false)}
             />
           )
         }
       </MapContainer>
+      {isNavigationScreen && (
+        <>
+          <div className="fixed left-0 top-0 z-[210000] w-full p-4 pointer-events-none">
+            <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between rounded-xl border border-white/20 bg-black/55 px-4 py-3 text-white shadow-xl backdrop-blur-md pointer-events-auto">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Chế độ dẫn đường</p>
+              <p className="text-xs text-white/80">Mọi thao tác đã tạm khóa, bấm X để quay lại</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleExitNavigationScreen}
+              className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold hover:bg-white/25"
+            >
+              X
+            </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
