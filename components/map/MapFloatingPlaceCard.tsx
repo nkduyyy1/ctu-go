@@ -41,8 +41,13 @@ export default function MapFloatingPlaceCard({
                                 className="object-cover"
                             />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <div className="text-gray-400 text-4xl">CGo</div>
+                            <div className="w-full h-full bg-gray-50">
+                                <Image
+                                    src="/file.svg"
+                                    alt="Location placeholder"
+                                    fill
+                                    className="object-contain p-4 opacity-80"
+                                />
                             </div>
                         )}
                     </div>

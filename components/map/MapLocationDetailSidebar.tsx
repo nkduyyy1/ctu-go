@@ -236,8 +236,13 @@ export default function MapLocationDetailSidebar({
             )}
           </>
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500">
-            <MapPin className="w-32 h-32 text-white opacity-90" />
+          <div className="relative h-full bg-gray-50">
+            <Image
+              src="/file.svg"
+              alt="Location placeholder"
+              fill
+              className="object-contain p-12 opacity-80"
+            />
           </div>
         )}
       </div>

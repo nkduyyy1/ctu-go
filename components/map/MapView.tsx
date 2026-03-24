@@ -72,6 +72,8 @@ export default function MapView() {
           (location) => location.lat && location.lng
         );
         setLocations(data);
+        console.log(data);
+        
       } catch {
         console.log("Failed to fetch locations");
       } finally {
