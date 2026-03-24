@@ -8,6 +8,8 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
 
 export default function Home() {
   return (
-    <MapView />
+    <main className="relative pb-20">
+      <MapView />
+    </main>
   );
 }

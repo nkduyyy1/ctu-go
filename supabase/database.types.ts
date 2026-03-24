@@ -200,27 +200,135 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null;
+          bio: string | null;
+          campus: string | null;
           created_at: string | null;
+          discovery_opt_in: boolean;
           email: string | null;
+          email_verified: boolean;
+          faculty: string | null;
           full_name: string | null;
           id: string;
+          interests: string[];
           role: string | null;
+          year: string | null;
         };
         Insert: {
           avatar_url?: string | null;
+          bio?: string | null;
+          campus?: string | null;
           created_at?: string | null;
+          discovery_opt_in?: boolean;
           email?: string | null;
+          email_verified?: boolean;
+          faculty?: string | null;
           full_name?: string | null;
           id: string;
+          interests?: string[];
           role?: string | null;
+          year?: string | null;
         };
         Update: {
           avatar_url?: string | null;
+          bio?: string | null;
+          campus?: string | null;
           created_at?: string | null;
+          discovery_opt_in?: boolean;
           email?: string | null;
+          email_verified?: boolean;
+          faculty?: string | null;
           full_name?: string | null;
           id?: string;
+          interests?: string[];
           role?: string | null;
+          year?: string | null;
+        };
+        Relationships: [];
+      };
+      email_otp_tokens: {
+        Row: {
+          attempt_count: number;
+          consumed_at: string | null;
+          created_at: string;
+          email: string;
+          expires_at: string;
+          id: string;
+          is_active: boolean;
+          max_attempts: number;
+          otp_hash: string;
+          purpose: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          consumed_at?: string | null;
+          created_at?: string;
+          email: string;
+          expires_at: string;
+          id?: string;
+          is_active?: boolean;
+          max_attempts?: number;
+          otp_hash: string;
+          purpose?: string;
+        };
+        Update: {
+          attempt_count?: number;
+          consumed_at?: string | null;
+          created_at?: string;
+          email?: string;
+          expires_at?: string;
+          id?: string;
+          is_active?: boolean;
+          max_attempts?: number;
+          otp_hash?: string;
+          purpose?: string;
+        };
+        Relationships: [];
+      };
+      user_matches: {
+        Row: {
+          id: string;
+          matched_at: string;
+          user_a: string;
+          user_b: string;
+        };
+        Insert: {
+          id?: string;
+          matched_at?: string;
+          user_a: string;
+          user_b: string;
+        };
+        Update: {
+          id?: string;
+          matched_at?: string;
+          user_a?: string;
+          user_b?: string;
+        };
+        Relationships: [];
+      };
+      user_swipes: {
+        Row: {
+          action: string;
+          actor_user_id: string;
+          created_at: string;
+          id: string;
+          target_user_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          action: string;
+          actor_user_id: string;
+          created_at?: string;
+          id?: string;
+          target_user_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          action?: string;
+          actor_user_id?: string;
+          created_at?: string;
+          id?: string;
+          target_user_id?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

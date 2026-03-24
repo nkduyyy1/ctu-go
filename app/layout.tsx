@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
+import { AppBottomSwitch } from "@/components/navigation/AppBottomSwitch";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -69,6 +70,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Toaster />
         <LoadingProvider>{children}</LoadingProvider>
+        <AppBottomSwitch />
       </body>
     </html>
   );
