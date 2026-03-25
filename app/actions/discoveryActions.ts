@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { withActionLog } from "@/lib/server-action-log";
 import { createClient } from "@/supabase/server";
 
 const targetSchema = z.object({
@@ -9,6 +10,7 @@ const targetSchema = z.object({
 });
 
 export async function getDiscoveryUsers(limit = 20) {
+  return withActionLog("discovery/getDiscoveryUsers", async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,9 +47,11 @@ export async function getDiscoveryUsers(limit = 20) {
   }
 
   return { success: true, data };
+  });
 }
 
 export async function getDiscoveryUserDetail(targetUserId: string) {
+  return withActionLog("discovery/getDiscoveryUserDetail", async () => {
   const parsed = z.string().uuid().safeParse(targetUserId);
   if (!parsed.success) {
     return { success: false, message: "Target user khong hop le" };
@@ -85,9 +89,11 @@ export async function getDiscoveryUserDetail(targetUserId: string) {
   }
 
   return { success: true, data };
+  });
 }
 
 export async function likeUser(input: { targetUserId: string }) {
+  return withActionLog("discovery/likeUser", async () => {
   const parsed = targetSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Target user khong hop le" };
@@ -138,9 +144,11 @@ export async function likeUser(input: { targetUserId: string }) {
   }
 
   return { success: true, matched: false, message: "Da like" };
+  });
 }
 
 export async function passUser(input: { targetUserId: string }) {
+  return withActionLog("discovery/passUser", async () => {
   const parsed = targetSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Target user khong hop le" };
@@ -169,4 +177,5 @@ export async function passUser(input: { targetUserId: string }) {
   }
 
   return { success: true, message: "Da bo qua" };
+  });
 }

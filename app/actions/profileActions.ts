@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { withActionLog } from "@/lib/server-action-log";
 import { createClient } from "@/supabase/server";
 
 const profileSchema = z.object({
@@ -16,6 +17,7 @@ const profileSchema = z.object({
 });
 
 export async function getMyProfile() {
+  return withActionLog("profile/getMyProfile", async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,6 +38,7 @@ export async function getMyProfile() {
   }
 
   return { success: true, data };
+  });
 }
 
 export async function upsertMyProfile(input: {
@@ -48,6 +51,7 @@ export async function upsertMyProfile(input: {
   interests: string[];
   discovery_opt_in: boolean;
 }) {
+  return withActionLog("profile/upsertMyProfile", async () => {
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Thong tin profile khong hop le" };
@@ -83,4 +87,5 @@ export async function upsertMyProfile(input: {
   }
 
   return { success: true, message: "Cap nhat profile thanh cong" };
+  });
 }

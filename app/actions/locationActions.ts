@@ -1,5 +1,6 @@
 "use server";
 
+import { withActionLog } from "@/lib/server-action-log";
 import { createClient } from "@/supabase/server";
 import { z } from "zod";
 
@@ -26,6 +27,7 @@ export async function getLocations({
   offset?: number;
   search?: string;
 }) {
+  return withActionLog("location/getLocations", async () => {
   const supabase = await createClient();
 
   let query = supabase
@@ -89,6 +91,7 @@ export async function getLocations({
     count: count || 0,
     hasMore: (count || 0) > offset + limit,
   };
+  });
 }
 
 // export async function getNearbyLocations({
@@ -117,6 +120,7 @@ export async function getLocations({
 // }
 
 export async function getCategories() {
+  return withActionLog("location/getCategories", async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
@@ -125,9 +129,11 @@ export async function getCategories() {
 
   if (error) throw error;
   return data;
+  });
 }
 
 export async function getLocationById(id: string) {
+  return withActionLog("location/getLocationById", async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("locations")
@@ -142,4 +148,5 @@ export async function getLocationById(id: string) {
 
   if (error) throw error;
   return data;
+  });
 }

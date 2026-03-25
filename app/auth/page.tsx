@@ -7,6 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   CheckCircle2,
+  Eye,
+  EyeOff,
   KeyRound,
   Loader2,
   Lock,
@@ -46,6 +48,9 @@ export default function AuthPage() {
   const searchParams = useSearchParams();
   const [screen, setScreen] = useState<Screen>("signin");
   const [isPending, startTransition] = useTransition();
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
   const nextPath = searchParams.get("next") || "/profile";
 
   const signInForm = useForm<LoginFormValues>({
@@ -140,6 +145,7 @@ export default function AuthPage() {
 
   const inputLg =
     "h-11 rounded-xl border-border/70 bg-muted/30 pl-10 shadow-none transition-colors focus-visible:border-primary/40 focus-visible:bg-background focus-visible:ring-primary/20";
+  const inputLgPassword = cn(inputLg, "pr-10");
 
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-gradient-to-b from-primary/15 via-background to-secondary/25 px-4 py-10 md:py-14">
@@ -276,7 +282,7 @@ export default function AuthPage() {
 
                   {screen === "signin" && (
                     <form className="space-y-4" onSubmit={onLoginSubmit} noValidate>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <label htmlFor="signin-email" className="text-sm font-medium text-foreground">
                           Email
                         </label>
@@ -294,7 +300,7 @@ export default function AuthPage() {
                         </div>
                         <FieldError message={signInForm.formState.errors.email?.message} />
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <label htmlFor="signin-password" className="text-sm font-medium text-foreground">
                           Mật khẩu
                         </label>
@@ -302,13 +308,21 @@ export default function AuthPage() {
                           <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             id="signin-password"
-                            type="password"
+                            type={showSignInPassword ? "text" : "password"}
                             autoComplete="current-password"
                             placeholder="••••••••"
                             aria-invalid={!!signInForm.formState.errors.password}
-                            className={cn(inputLg, signInForm.formState.errors.password && "border-destructive")}
+                            className={cn(inputLgPassword, signInForm.formState.errors.password && "border-destructive")}
                             {...signInForm.register("password")}
                           />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                            onClick={() => setShowSignInPassword((v) => !v)}
+                            aria-label={showSignInPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                          >
+                            {showSignInPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </button>
                         </div>
                         <FieldError message={signInForm.formState.errors.password?.message} />
                       </div>
@@ -344,7 +358,7 @@ export default function AuthPage() {
 
                   {screen === "signup" && (
                     <form className="space-y-4" onSubmit={onSignupSubmit} noValidate>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <label htmlFor="signup-email" className="text-sm font-medium text-foreground">
                           Email
                         </label>
@@ -363,7 +377,7 @@ export default function AuthPage() {
                         <FieldError message={signUpForm.formState.errors.email?.message} />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                           <label htmlFor="signup-first" className="text-sm font-medium text-foreground">
                             Tên
                           </label>
@@ -381,7 +395,7 @@ export default function AuthPage() {
                           </div>
                           <FieldError message={signUpForm.formState.errors.firstName?.message} />
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                           <label htmlFor="signup-last" className="text-sm font-medium text-foreground">
                             Họ
                           </label>
@@ -400,7 +414,7 @@ export default function AuthPage() {
                           <FieldError message={signUpForm.formState.errors.lastName?.message} />
                         </div>
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <label htmlFor="signup-password" className="text-sm font-medium text-foreground">
                           Mật khẩu
                         </label>
@@ -408,17 +422,25 @@ export default function AuthPage() {
                           <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             id="signup-password"
-                            type="password"
+                            type={showSignupPassword ? "text" : "password"}
                             autoComplete="new-password"
                             placeholder="Tối thiểu 8 ký tự"
                             aria-invalid={!!signUpForm.formState.errors.password}
-                            className={cn(inputLg, signUpForm.formState.errors.password && "border-destructive")}
+                            className={cn(inputLgPassword, signUpForm.formState.errors.password && "border-destructive")}
                             {...signUpForm.register("password")}
                           />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                            onClick={() => setShowSignupPassword((v) => !v)}
+                            aria-label={showSignupPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                          >
+                            {showSignupPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </button>
                         </div>
                         <FieldError message={signUpForm.formState.errors.password?.message} />
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <label htmlFor="signup-confirm" className="text-sm font-medium text-foreground">
                           Xác nhận mật khẩu
                         </label>
@@ -426,13 +448,21 @@ export default function AuthPage() {
                           <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             id="signup-confirm"
-                            type="password"
+                            type={showSignupConfirmPassword ? "text" : "password"}
                             autoComplete="new-password"
                             placeholder="Nhập lại mật khẩu"
                             aria-invalid={!!signUpForm.formState.errors.confirmPassword}
-                            className={cn(inputLg, signUpForm.formState.errors.confirmPassword && "border-destructive")}
+                            className={cn(inputLgPassword, signUpForm.formState.errors.confirmPassword && "border-destructive")}
                             {...signUpForm.register("confirmPassword")}
                           />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                            onClick={() => setShowSignupConfirmPassword((v) => !v)}
+                            aria-label={showSignupConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                          >
+                            {showSignupConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </button>
                         </div>
                         <FieldError message={signUpForm.formState.errors.confirmPassword?.message} />
                       </div>
@@ -471,7 +501,7 @@ export default function AuthPage() {
                         <ArrowLeft className="size-4" />
                         Quay lại
                       </Button>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <label htmlFor="otp" className="flex items-center gap-2 text-sm font-medium text-foreground">
                           <KeyRound className="size-4 text-muted-foreground" aria-hidden />
                           Mã OTP
@@ -515,7 +545,7 @@ export default function AuthPage() {
                       <div className="flex size-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
                         <CheckCircle2 className="size-9" strokeWidth={1.75} />
                       </div>
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <p className="text-lg font-semibold text-foreground">Đăng ký thành công</p>
                         <p className="text-sm text-muted-foreground">
                           Bạn có thể đăng nhập bằng email và mật khẩu vừa tạo.

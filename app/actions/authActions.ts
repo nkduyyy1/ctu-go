@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { sendOtpEmail } from "@/lib/email";
+import { withActionLog } from "@/lib/server-action-log";
 import { generateOtp, hashOtp } from "@/lib/security";
 import {
   completeSignupSchema,
@@ -10,6 +11,7 @@ import {
   loginSchema,
   otpSchema,
 } from "@/lib/validation/auth";
+import { createServiceRoleClient } from "@/supabase/admin";
 import { createClient } from "@/supabase/server";
 
 export async function completeSignup(input: {
@@ -20,6 +22,7 @@ export async function completeSignup(input: {
   confirmPassword: string;
   otp: string;
 }) {
+  return withActionLog("auth/completeSignup", async () => {
   const parsed = completeSignupSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Thông tin đăng ký không hợp lệ" };
@@ -48,19 +51,30 @@ export async function completeSignup(input: {
     return { success: false, message: error.message };
   }
 
-  if (data.user) {
-    await upsertProfileForEmail(
-      data.user.id,
-      email,
-      `${parsed.data.firstName.trim()} ${parsed.data.lastName.trim()}`.trim()
-    );
+  if (!data.user) {
+    return {
+      success: false,
+      message:
+        "Không tạo được tài khoản. Kiểm tra email xác nhận từ Supabase hoặc tắt Confirm email.",
+    };
+  }
+
+  const profileError = await upsertProfileForEmail(
+    data.user.id,
+    email,
+    `${parsed.data.firstName.trim()} ${parsed.data.lastName.trim()}`.trim()
+  );
+  if (profileError) {
+    return { success: false, message: profileError.message };
   }
 
   revalidatePath("/profile");
   return { success: true, message: "Đăng ký thành công" };
+  });
 }
 
 export async function requestSignupOtp(input: { email: string }) {
+  return withActionLog("auth/requestSignupOtp", async () => {
   const parsed = emailSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Email không hợp lệ" };
@@ -99,11 +113,13 @@ export async function requestSignupOtp(input: { email: string }) {
 
   try {
     await sendOtpEmail({ email, otp });
-  } catch {
+  } catch (error) {
+    console.error("requestSignupOtp sendOtpEmail failed", error);
     return { success: false, message: "Gửi OTP thất bại" };
   }
 
   return { success: true, message: "OTP đăng ký đã được gửi vào email" };
+  });
 }
 
 async function verifyOtpToken(input: { email: string; otp: string }) {
@@ -172,6 +188,7 @@ export async function loginWithEmailPassword(input: {
   email: string;
   password: string;
 }) {
+  return withActionLog("auth/loginWithEmailPassword", async () => {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Thông tin đăng nhập không hợp lệ" };
@@ -204,15 +221,19 @@ export async function loginWithEmailPassword(input: {
   }
 
   return { success: true, message: "Đăng nhập thành công" };
+  });
 }
 
 export async function logoutUser() {
+  return withActionLog("auth/logoutUser", async () => {
   const supabase = await createClient();
   await supabase.auth.signOut();
   return { success: true };
+  });
 }
 
 export async function requestResetPassword(input: { email: string }) {
+  return withActionLog("auth/requestResetPassword", async () => {
   const parsed = emailSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "Email không hợp lệ" };
@@ -230,17 +251,22 @@ export async function requestResetPassword(input: { email: string }) {
   }
 
   return { success: true, message: "Đã gửi email đặt lại mật khẩu" };
+  });
 }
 
 async function upsertProfileForEmail(userId: string, email: string, username: string) {
+  const row = {
+    id: userId,
+    email,
+    full_name: username,
+    email_verified: true,
+  };
+  const admin = createServiceRoleClient();
+  if (admin) {
+    const { error } = await admin.from("profiles").upsert(row, { onConflict: "id" });
+    return error;
+  }
   const supabase = await createClient();
-  await supabase.from("profiles").upsert(
-    {
-      id: userId,
-      email,
-      full_name: username,
-      email_verified: true,
-    },
-    { onConflict: "id" }
-  );
+  const { error } = await supabase.from("profiles").upsert(row, { onConflict: "id" });
+  return error;
 }

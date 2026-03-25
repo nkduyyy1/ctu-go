@@ -34,11 +34,31 @@ export async function sendOtpEmail(payload: SendOtpEmailPayload) {
 
   const { text, html } = otpBodies(payload.otp);
 
-  await transporter.sendMail({
-    from: `${fromName} <${fromEmail}>`,
-    to: payload.email,
-    subject: OTP_SUBJECT,
-    text,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `${fromName} <${fromEmail}>`,
+      to: payload.email,
+      subject: OTP_SUBJECT,
+      text,
+      html,
+    });
+  } catch (error) {
+    const e = error as {
+      code?: string;
+      responseCode?: number;
+      command?: string;
+      message?: string;
+    };
+    console.error("sendOtpEmail SMTP sendMail failed", {
+      to: payload.email,
+      from: fromEmail,
+      host,
+      port,
+      code: e?.code,
+      responseCode: e?.responseCode,
+      command: e?.command,
+      message: e?.message,
+    });
+    throw new Error("Gửi email thất bại");
+  }
 }
