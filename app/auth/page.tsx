@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -11,11 +21,10 @@ import {
   requestSignupOtp,
 } from "@/app/actions/authActions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type Screen = "signin" | "signup" | "otp" | "success";
-type AuthSlide = "toSignin" | "toSignup";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -27,10 +36,8 @@ export default function AuthPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [otp, setOtp] = useState("");
-  const [authSlide, setAuthSlide] = useState<AuthSlide>("toSignin");
   const [isPending, startTransition] = useTransition();
   const nextPath = searchParams.get("next") || "/profile";
-  const isSignupFlow = screen === "signup" || screen === "otp" || screen === "success";
 
   const onNextSignup = () => {
     startTransition(async () => {
@@ -92,191 +99,384 @@ export default function AuthPage() {
   };
 
   const switchAuthScreen = (target: "signin" | "signup") => {
-    setAuthSlide(target === "signup" ? "toSignup" : "toSignin");
     setScreen(target);
   };
 
+  const inputLg =
+    "h-11 rounded-xl border-border/70 bg-muted/30 pl-10 shadow-none transition-colors focus-visible:border-primary/40 focus-visible:bg-background focus-visible:ring-primary/20";
+
   return (
-    <main className="relative flex min-h-screen bg-gradient-to-br from-[#f3faf9] via-[#f8fffd] to-[#eef6ff] px-4 py-8 md:py-12">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-[#57CC99]/20 blur-3xl" />
-        <div className="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-[#38A3A5]/15 blur-3xl" />
+    <main className="relative flex min-h-screen items-center justify-center bg-gradient-to-b from-primary/15 via-background to-secondary/25 px-4 py-10 md:py-14">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-32 top-20 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
+        <div className="absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-secondary/40 blur-3xl" />
       </div>
-      <div className="mx-auto grid min-h-[78vh] w-full max-w-6xl items-center">
-        <div className="relative w-full overflow-hidden rounded-2xl border bg-card shadow-2xl md:min-h-[640px]">
-          <section
-            className={`relative hidden min-h-[640px] md:absolute md:inset-y-0 md:left-0 md:block md:w-1/2 md:transition-transform md:duration-500 md:ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              isSignupFlow ? "md:translate-x-full" : "md:translate-x-0"
-            }`}
-          >
-            <div className="absolute inset-0 bg-[url('/assets/ctu-bg.jpeg')] bg-cover bg-right" />
-            <div className="absolute inset-0 bg-black/35" />
-            <div className="relative flex h-full flex-col justify-end p-8 text-white">
-              <h1 className="text-3xl font-bold leading-tight">CTU GO</h1>
-              <p className="mt-3 text-sm text-white/90">
-                Khám phá trường, kết nối bạn mới và tìm người hợp vibe ngay trong cộng đồng CTU.
-              </p>
+
+      <div className="relative z-10 mx-auto w-full max-w-5xl">
+        <div className="relative grid w-full overflow-hidden rounded-3xl border border-border/60 bg-card shadow-xl shadow-primary/5 ring-1 ring-black/5 md:min-h-[min(42rem,92vh)] md:grid-cols-2">
+          <section className="relative hidden min-h-[22rem] md:block md:h-full md:min-h-0">
+            <Image
+              src="/assets/ctu-bg-2.png"
+              alt=""
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 0vw, 50vw"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/25" />
+            <div className="relative flex h-full min-h-[20rem] flex-col justify-end p-8 md:p-10">
+              <div className="max-w-sm space-y-3 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+                  Cộng đồng sinh viên
+                </p>
+                <h1 className="text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+                  CTU GO
+                </h1>
+                <p className="text-sm leading-relaxed text-white/90">
+                  Khám phá trường, kết nối bạn mới và tìm người hợp vibe ngay trong cộng đồng CTU.
+                </p>
+              </div>
             </div>
           </section>
 
-          <section
-            className={`relative z-10 p-5 bg-white md:absolute md:inset-y-0 md:right-0 md:w-1/2 md:p-8 md:transition-transform md:duration-500 md:ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              isSignupFlow ? "md:-translate-x-full" : "md:translate-x-0"
-            }`}
-          >
-          <Card className="border-0 bg-transparent shadow-none">
-            <CardHeader className="px-0">
-              <CardTitle className="text-2xl font-semibold text-[#22577A]">CTU GO</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 px-0">
-              {(screen === "signin" || screen === "signup") && (
-                <div className="relative grid grid-cols-2 rounded-full bg-muted p-1">
-                  <div
-                    className={`absolute bottom-1 top-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow transition-transform duration-300 ${
-                      screen === "signup" ? "translate-x-[calc(100%+0.25rem)]" : "translate-x-0"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    className={`relative z-10 rounded-full px-3 py-2 text-sm font-medium transition ${
-                      screen === "signin" ? "text-[#22577A]" : "text-muted-foreground"
-                    }`}
-                    onClick={() => switchAuthScreen("signin")}
-                    disabled={isPending}
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    type="button"
-                    className={`relative z-10 rounded-full px-3 py-2 text-sm font-medium transition ${
-                      screen === "signup" ? "text-[#22577A]" : "text-muted-foreground"
-                    }`}
-                    onClick={() => switchAuthScreen("signup")}
-                    disabled={isPending}
-                  >
-                    Sign up
-                  </button>
+          <section className="relative z-10 flex min-h-[20rem] flex-col bg-card">
+              <div className="relative h-40 w-full shrink-0 overflow-hidden md:hidden">
+                <Image
+                  src="/assets/ctu-bg-2.png"
+                  alt=""
+                  fill
+                  className="object-cover object-center"
+                  sizes="100vw"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30" />
+                <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-5 pb-5 text-white">
+                  <div className="relative size-11 shrink-0 overflow-hidden rounded-xl bg-white/15 p-1">
+                    <Image
+                      src="/assets/cg-logo.png"
+                      alt="CTU"
+                      width={36}
+                      height={36}
+                      className="size-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-white/85">
+                      Đại học Cần Thơ
+                    </p>
+                    <p className="text-base font-bold tracking-tight">CTU GO</p>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {screen === "signin" && (
-                <div
-                  className={`space-y-4 animate-in fade-in duration-300 ${
-                    authSlide === "toSignin" ? "slide-in-from-left-4" : "slide-in-from-right-4"
-                  }`}
-                >
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                  />
-                  <Button className="w-full bg-[#22577A] hover:bg-[#1A4864]" onClick={onLogin} disabled={isPending}>
-                    Sign in
-                  </Button>
-                  <button
-                    type="button"
-                    className="text-sm text-[#22577A] hover:underline"
-                    onClick={onForgotPassword}
-                    disabled={isPending}
-                  >
-                    Forgot your password
-                  </button>
-                  <div className="text-sm text-muted-foreground">
-                    Don&apos;t have an account{" "}
-                    <button
-                      type="button"
-                      className="font-medium text-[#22577A] hover:underline"
-                      onClick={() => switchAuthScreen("signup")}
+              <div className="flex flex-1 flex-col px-5 py-8 md:px-10 md:py-10">
+                <div className="mb-5 md:hidden">
+                  <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                    {screen === "signin" && "Đăng nhập"}
+                    {screen === "signup" && "Tạo tài khoản"}
+                    {screen === "otp" && "Xác minh email"}
+                    {screen === "success" && "Hoàn tất"}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {screen === "signin" && "Chào mừng bạn quay lại."}
+                    {screen === "signup" && "Điền thông tin để bắt đầu."}
+                    {screen === "otp" && "Nhập mã gửi đến email của bạn."}
+                    {screen === "success" && "Tài khoản đã sẵn sàng."}
+                  </p>
+                </div>
+                <div className="mb-6 hidden md:block">
+                  <h2 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
+                    {screen === "signin" && "Đăng nhập"}
+                    {screen === "signup" && "Tạo tài khoản"}
+                    {screen === "otp" && "Xác minh email"}
+                    {screen === "success" && "Hoàn tất"}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {screen === "signin" && "Chào mừng bạn quay lại."}
+                    {screen === "signup" && "Điền thông tin để bắt đầu."}
+                    {screen === "otp" && "Nhập mã gửi đến email của bạn."}
+                    {screen === "success" && "Tài khoản đã sẵn sàng."}
+                  </p>
+                </div>
+
+                <div className="flex w-full flex-1 flex-col space-y-6">
+                  {(screen === "signin" || screen === "signup") && (
+                    <div
+                      className="grid grid-cols-2 gap-1 rounded-2xl bg-muted/60 p-1"
+                      role="tablist"
                     >
-                      Sign up
-                    </button>
-                  </div>
-                </div>
-              )}
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={screen === "signin"}
+                        className={cn(
+                          "rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
+                          screen === "signin"
+                            ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                        onClick={() => switchAuthScreen("signin")}
+                        disabled={isPending}
+                      >
+                        Đăng nhập
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={screen === "signup"}
+                        className={cn(
+                          "rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
+                          screen === "signup"
+                            ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                        onClick={() => switchAuthScreen("signup")}
+                        disabled={isPending}
+                      >
+                        Đăng ký
+                      </button>
+                    </div>
+                  )}
 
-              {screen === "signup" && (
-                <div
-                  className={`space-y-4 animate-in fade-in duration-300 ${
-                    authSlide === "toSignup" ? "slide-in-from-right-4" : "slide-in-from-left-4"
-                  }`}
-                >
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="First name"
-                    />
-                    <Input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Last name"
-                    />
-                  </div>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                  />
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm password"
-                  />
-                  <Button
-                    className="w-full bg-[#22577A] hover:bg-[#1A4864]"
-                    onClick={onNextSignup}
-                    disabled={isPending}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
+                  {screen === "signin" && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="signin-email" className="text-sm font-medium text-foreground">
+                          Email
+                        </label>
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="ten@student.ctu.edu.vn"
+                            className={inputLg}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="signin-password" className="text-sm font-medium text-foreground">
+                          Mật khẩu
+                        </label>
+                        <div className="relative">
+                          <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="signin-password"
+                            type="password"
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className={inputLg}
+                          />
+                        </div>
+                      </div>
+                      <Button className="h-11 w-full rounded-xl text-base font-semibold" onClick={onLogin} disabled={isPending}>
+                        {isPending ? <Loader2 className="size-5 animate-spin" /> : "Đăng nhập"}
+                      </Button>
+                      <div className="flex flex-col gap-3 border-t border-border/60 pt-4">
+                        <button
+                          type="button"
+                          className="text-left text-sm font-medium text-primary hover:underline"
+                          onClick={onForgotPassword}
+                          disabled={isPending}
+                        >
+                          Quên mật khẩu?
+                        </button>
+                        <p className="text-sm text-muted-foreground">
+                          Chưa có tài khoản?{" "}
+                          <button
+                            type="button"
+                            className="font-semibold text-primary hover:underline"
+                            onClick={() => switchAuthScreen("signup")}
+                          >
+                            Đăng ký
+                          </button>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-              {screen === "otp" && (
-                <div className="space-y-4">
-                  <Input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="OTP code"
-                    maxLength={6}
-                  />
-                  <Button
-                    className="w-full bg-[#22577A] hover:bg-[#1A4864]"
-                    onClick={onConfirmOtp}
-                    disabled={isPending}
-                  >
-                    Confirm
-                  </Button>
-                </div>
-              )}
+                  {screen === "signup" && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="signup-email" className="text-sm font-medium text-foreground">
+                          Email
+                        </label>
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="signup-email"
+                            type="email"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="ten@student.ctu.edu.vn"
+                            className={inputLg}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <label htmlFor="signup-first" className="text-sm font-medium text-foreground">
+                            Tên
+                          </label>
+                          <div className="relative">
+                            <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              id="signup-first"
+                              type="text"
+                              autoComplete="given-name"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              placeholder="Tên"
+                              className={inputLg}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label htmlFor="signup-last" className="text-sm font-medium text-foreground">
+                            Họ
+                          </label>
+                          <div className="relative">
+                            <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              id="signup-last"
+                              type="text"
+                              autoComplete="family-name"
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                              placeholder="Họ"
+                              className={inputLg}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="signup-password" className="text-sm font-medium text-foreground">
+                          Mật khẩu
+                        </label>
+                        <div className="relative">
+                          <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="signup-password"
+                            type="password"
+                            autoComplete="new-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Tối thiểu 8 ký tự"
+                            className={inputLg}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="signup-confirm" className="text-sm font-medium text-foreground">
+                          Xác nhận mật khẩu
+                        </label>
+                        <div className="relative">
+                          <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="signup-confirm"
+                            type="password"
+                            autoComplete="new-password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Nhập lại mật khẩu"
+                            className={inputLg}
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        className="h-11 w-full rounded-xl text-base font-semibold"
+                        onClick={onNextSignup}
+                        disabled={isPending}
+                      >
+                        {isPending ? <Loader2 className="size-5 animate-spin" /> : "Tiếp theo"}
+                      </Button>
+                      <p className="text-center text-sm text-muted-foreground">
+                        Đã có tài khoản?{" "}
+                        <button
+                          type="button"
+                          className="font-semibold text-primary hover:underline"
+                          onClick={() => switchAuthScreen("signin")}
+                        >
+                          Đăng nhập
+                        </button>
+                      </p>
+                    </div>
+                  )}
 
-              {screen === "success" && (
-                <div className="space-y-4">
-                  <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
-                    Đăng ký thành công
-                  </div>
-                  <Button
-                    className="w-full bg-[#22577A] hover:bg-[#1A4864]"
-                    onClick={() => {
-                      setScreen("signin");
-                      router.push("/auth");
-                    }}
-                    disabled={isPending}
-                  >
-                    Go to Sign in
-                  </Button>
+                  {screen === "otp" && (
+                    <div className="space-y-5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="-ml-2 h-9 gap-1 px-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setScreen("signup");
+                          setOtp("");
+                        }}
+                        disabled={isPending}
+                      >
+                        <ArrowLeft className="size-4" />
+                        Quay lại
+                      </Button>
+                      <div className="space-y-2">
+                        <label htmlFor="otp" className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <KeyRound className="size-4 text-muted-foreground" aria-hidden />
+                          Mã OTP
+                        </label>
+                        <Input
+                          id="otp"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                          placeholder="••••••"
+                          maxLength={6}
+                          className="h-14 rounded-xl border-border/70 bg-muted/30 text-center font-mono text-2xl tracking-[0.45em] shadow-none focus-visible:border-primary/40 focus-visible:bg-background focus-visible:ring-primary/20"
+                        />
+                        <p className="text-xs text-muted-foreground">Mã có 6 chữ số đã gửi tới email của bạn.</p>
+                      </div>
+                      <Button
+                        className="h-11 w-full rounded-xl text-base font-semibold"
+                        onClick={onConfirmOtp}
+                        disabled={isPending}
+                      >
+                        {isPending ? <Loader2 className="size-5 animate-spin" /> : "Xác nhận"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {screen === "success" && (
+                    <div className="flex flex-col items-center space-y-6 py-4 text-center">
+                      <div className="flex size-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                        <CheckCircle2 className="size-9" strokeWidth={1.75} />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold text-foreground">Đăng ký thành công</p>
+                        <p className="text-sm text-muted-foreground">
+                          Bạn có thể đăng nhập bằng email và mật khẩu vừa tạo.
+                        </p>
+                      </div>
+                      <Button
+                        className="h-11 w-full max-w-xs rounded-xl text-base font-semibold"
+                        onClick={() => {
+                          setScreen("signin");
+                          router.push("/auth");
+                        }}
+                        disabled={isPending}
+                      >
+                        Đăng nhập ngay
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
           </section>
         </div>
       </div>
