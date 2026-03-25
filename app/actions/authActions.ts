@@ -1,30 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 
 import { sendOtpEmail } from "@/lib/email";
 import { generateOtp, hashOtp } from "@/lib/security";
+import {
+  completeSignupSchema,
+  emailSchema,
+  loginSchema,
+  otpSchema,
+} from "@/lib/validation/auth";
 import { createClient } from "@/supabase/server";
-
-const completeSignupSchema = z.object({
-  firstName: z.string().min(1).max(50),
-  lastName: z.string().min(1).max(50),
-  email: z.string().email(),
-  password: z.string().min(8),
-  confirmPassword: z.string().min(8),
-  otp: z.string().length(6),
-});
-
-const otpSchema = z.object({
-  email: z.string().email(),
-  otp: z.string().length(6),
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
 
 export async function completeSignup(input: {
   firstName: string;
@@ -36,10 +22,10 @@ export async function completeSignup(input: {
 }) {
   const parsed = completeSignupSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, message: "Thong tin dang ky khong hop le" };
+    return { success: false, message: "Thông tin đăng ký không hợp lệ" };
   }
   if (parsed.data.password !== parsed.data.confirmPassword) {
-    return { success: false, message: "Mat khau xac nhan khong khop" };
+    return { success: false, message: "Mật khẩu xác nhận không khớp" };
   }
 
   const supabase = await createClient();
@@ -71,13 +57,13 @@ export async function completeSignup(input: {
   }
 
   revalidatePath("/profile");
-  return { success: true, message: "Dang ky thanh cong" };
+  return { success: true, message: "Đăng ký thành công" };
 }
 
 export async function requestSignupOtp(input: { email: string }) {
-  const parsed = z.object({ email: z.string().email() }).safeParse(input);
+  const parsed = emailSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, message: "Email khong hop le" };
+    return { success: false, message: "Email không hợp lệ" };
   }
 
   const supabase = await createClient();
@@ -114,16 +100,16 @@ export async function requestSignupOtp(input: { email: string }) {
   try {
     await sendOtpEmail({ email, otp });
   } catch {
-    return { success: false, message: "Gui OTP that bai" };
+    return { success: false, message: "Gửi OTP thất bại" };
   }
 
-  return { success: true, message: "OTP dang ky da duoc gui ve email" };
+  return { success: true, message: "OTP đăng ký đã được gửi vào email" };
 }
 
 async function verifyOtpToken(input: { email: string; otp: string }) {
   const parsed = otpSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, message: "OTP khong hop le" };
+    return { success: false, message: "OTP không hợp lệ" };
   }
 
   const supabase = await createClient();
@@ -147,7 +133,7 @@ async function verifyOtpToken(input: { email: string; otp: string }) {
   }
 
   if (!token) {
-    return { success: false, message: "OTP da het han hoac khong ton tai" };
+    return { success: false, message: "OTP đã hết hạn hoặc không tồn tại" };
   }
 
   if (token.attempt_count >= token.max_attempts) {
@@ -155,7 +141,7 @@ async function verifyOtpToken(input: { email: string; otp: string }) {
       .from("email_otp_tokens")
       .update({ is_active: false })
       .eq("id", token.id);
-    return { success: false, message: "OTP da vuot qua so lan thu" };
+    return { success: false, message: "OTP đã vượt quá số lần thử" };
   }
 
   if (token.otp_hash !== providedHash) {
@@ -163,7 +149,7 @@ async function verifyOtpToken(input: { email: string; otp: string }) {
       .from("email_otp_tokens")
       .update({ attempt_count: token.attempt_count + 1 })
       .eq("id", token.id);
-    return { success: false, message: "OTP khong dung" };
+    return { success: false, message: "OTP không đúng" };
   }
 
   const { error: consumeError } = await supabase
@@ -179,7 +165,7 @@ async function verifyOtpToken(input: { email: string; otp: string }) {
     return { success: false, message: consumeError.message };
   }
 
-  return { success: true, message: "Xac thuc OTP thanh cong" };
+  return { success: true, message: "Xác thực OTP thành công" };
 }
 
 export async function loginWithEmailPassword(input: {
@@ -188,7 +174,7 @@ export async function loginWithEmailPassword(input: {
 }) {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, message: "Thong tin dang nhap khong hop le" };
+    return { success: false, message: "Thông tin đăng nhập không hợp lệ" };
   }
 
   const supabase = await createClient();
@@ -214,10 +200,10 @@ export async function loginWithEmailPassword(input: {
 
   if (!profile?.email_verified) {
     await supabase.auth.signOut();
-    return { success: false, message: "Tai khoan chua xac thuc OTP" };
+    return { success: false, message: "Tài khoản chưa xác thực OTP" };
   }
 
-  return { success: true, message: "Dang nhap thanh cong" };
+  return { success: true, message: "Đăng nhập thành công" };
 }
 
 export async function logoutUser() {
@@ -227,9 +213,9 @@ export async function logoutUser() {
 }
 
 export async function requestResetPassword(input: { email: string }) {
-  const parsed = z.object({ email: z.string().email() }).safeParse(input);
+  const parsed = emailSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, message: "Email khong hop le" };
+    return { success: false, message: "Email không hợp lệ" };
   }
 
   const supabase = await createClient();
@@ -243,7 +229,7 @@ export async function requestResetPassword(input: { email: string }) {
     return { success: false, message: error.message };
   }
 
-  return { success: true, message: "Da gui email dat lai mat khau" };
+  return { success: true, message: "Đã gửi email đặt lại mật khẩu" };
 }
 
 async function upsertProfileForEmail(userId: string, email: string, username: string) {

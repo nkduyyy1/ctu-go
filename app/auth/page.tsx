@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   Mail,
   User,
 } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
@@ -23,41 +25,53 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import {
+  loginSchema,
+  otpInputSchema,
+  signupStepSchema,
+  type LoginFormValues,
+  type OtpFormValues,
+  type SignupStepValues,
+} from "@/lib/validation/auth";
 
 type Screen = "signin" | "signup" | "otp" | "success";
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-sm text-destructive">{message}</p>;
+}
 
 export default function AuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [screen, setScreen] = useState<Screen>("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [otp, setOtp] = useState("");
   const [isPending, startTransition] = useTransition();
   const nextPath = searchParams.get("next") || "/profile";
 
-  const onNextSignup = () => {
-    startTransition(async () => {
-      if (password !== confirmPassword) {
-        toast.error("Mật khẩu xác nhận không khớp");
-        return;
-      }
-      const res = await requestSignupOtp({ email });
-      if (!res.success) {
-        toast.error(res.message);
-        return;
-      }
-      toast.success(res.message);
-      setScreen("otp");
-    });
-  };
+  const signInForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
-  const onLogin = () => {
+  const signUpForm = useForm<SignupStepValues>({
+    resolver: zodResolver(signupStepSchema),
+    defaultValues: {
+      email: "",
+      firstName: "",
+      lastName: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const otpForm = useForm<OtpFormValues>({
+    resolver: zodResolver(otpInputSchema),
+    defaultValues: { otp: "" },
+  });
+
+  const onLoginSubmit = signInForm.handleSubmit((data) => {
     startTransition(async () => {
-      const res = await loginWithEmailPassword({ email, password });
+      const res = await loginWithEmailPassword(data);
       if (!res.success) {
         toast.error(res.message);
         return;
@@ -66,17 +80,30 @@ export default function AuthPage() {
       router.push(nextPath);
       router.refresh();
     });
-  };
+  });
 
-  const onConfirmOtp = () => {
+  const onSignupSubmit = signUpForm.handleSubmit((data) => {
     startTransition(async () => {
+      const res = await requestSignupOtp({ email: data.email });
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(res.message);
+      setScreen("otp");
+    });
+  });
+
+  const onOtpSubmit = otpForm.handleSubmit((data) => {
+    startTransition(async () => {
+      const u = signUpForm.getValues();
       const res = await completeSignup({
-        firstName,
-        lastName,
-        email,
-        password,
-        confirmPassword,
-        otp,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        password: u.password,
+        confirmPassword: u.confirmPassword,
+        otp: data.otp,
       });
       if (!res.success) {
         toast.error(res.message);
@@ -85,9 +112,12 @@ export default function AuthPage() {
       toast.success(res.message);
       setScreen("success");
     });
-  };
+  });
 
-  const onForgotPassword = () => {
+  const onForgotPassword = async () => {
+    const ok = await signInForm.trigger("email");
+    if (!ok) return;
+    const email = signInForm.getValues("email");
     startTransition(async () => {
       const res = await requestResetPassword({ email });
       if (!res.success) {
@@ -99,7 +129,13 @@ export default function AuthPage() {
   };
 
   const switchAuthScreen = (target: "signin" | "signup") => {
-    setScreen(target);
+    if (target === "signin") {
+      signInForm.setValue("email", signUpForm.getValues("email"));
+      setScreen("signin");
+    } else {
+      signUpForm.setValue("email", signInForm.getValues("email"));
+      setScreen("signup");
+    }
   };
 
   const inputLg =
@@ -239,7 +275,7 @@ export default function AuthPage() {
                   )}
 
                   {screen === "signin" && (
-                    <div className="space-y-4">
+                    <form className="space-y-4" onSubmit={onLoginSubmit} noValidate>
                       <div className="space-y-2">
                         <label htmlFor="signin-email" className="text-sm font-medium text-foreground">
                           Email
@@ -250,12 +286,13 @@ export default function AuthPage() {
                             id="signin-email"
                             type="email"
                             autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="ten@student.ctu.edu.vn"
-                            className={inputLg}
+                            aria-invalid={!!signInForm.formState.errors.email}
+                            className={cn(inputLg, signInForm.formState.errors.email && "border-destructive")}
+                            {...signInForm.register("email")}
                           />
                         </div>
+                        <FieldError message={signInForm.formState.errors.email?.message} />
                       </div>
                       <div className="space-y-2">
                         <label htmlFor="signin-password" className="text-sm font-medium text-foreground">
@@ -267,14 +304,19 @@ export default function AuthPage() {
                             id="signin-password"
                             type="password"
                             autoComplete="current-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className={inputLg}
+                            aria-invalid={!!signInForm.formState.errors.password}
+                            className={cn(inputLg, signInForm.formState.errors.password && "border-destructive")}
+                            {...signInForm.register("password")}
                           />
                         </div>
+                        <FieldError message={signInForm.formState.errors.password?.message} />
                       </div>
-                      <Button className="h-11 w-full rounded-xl text-base font-semibold" onClick={onLogin} disabled={isPending}>
+                      <Button
+                        type="submit"
+                        className="h-11 w-full rounded-xl text-base font-semibold"
+                        disabled={isPending}
+                      >
                         {isPending ? <Loader2 className="size-5 animate-spin" /> : "Đăng nhập"}
                       </Button>
                       <div className="flex flex-col gap-3 border-t border-border/60 pt-4">
@@ -297,11 +339,11 @@ export default function AuthPage() {
                           </button>
                         </p>
                       </div>
-                    </div>
+                    </form>
                   )}
 
                   {screen === "signup" && (
-                    <div className="space-y-4">
+                    <form className="space-y-4" onSubmit={onSignupSubmit} noValidate>
                       <div className="space-y-2">
                         <label htmlFor="signup-email" className="text-sm font-medium text-foreground">
                           Email
@@ -312,12 +354,13 @@ export default function AuthPage() {
                             id="signup-email"
                             type="email"
                             autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="ten@student.ctu.edu.vn"
-                            className={inputLg}
+                            aria-invalid={!!signUpForm.formState.errors.email}
+                            className={cn(inputLg, signUpForm.formState.errors.email && "border-destructive")}
+                            {...signUpForm.register("email")}
                           />
                         </div>
+                        <FieldError message={signUpForm.formState.errors.email?.message} />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
@@ -330,12 +373,13 @@ export default function AuthPage() {
                               id="signup-first"
                               type="text"
                               autoComplete="given-name"
-                              value={firstName}
-                              onChange={(e) => setFirstName(e.target.value)}
                               placeholder="Tên"
-                              className={inputLg}
+                              aria-invalid={!!signUpForm.formState.errors.firstName}
+                              className={cn(inputLg, signUpForm.formState.errors.firstName && "border-destructive")}
+                              {...signUpForm.register("firstName")}
                             />
                           </div>
+                          <FieldError message={signUpForm.formState.errors.firstName?.message} />
                         </div>
                         <div className="space-y-2">
                           <label htmlFor="signup-last" className="text-sm font-medium text-foreground">
@@ -347,12 +391,13 @@ export default function AuthPage() {
                               id="signup-last"
                               type="text"
                               autoComplete="family-name"
-                              value={lastName}
-                              onChange={(e) => setLastName(e.target.value)}
                               placeholder="Họ"
-                              className={inputLg}
+                              aria-invalid={!!signUpForm.formState.errors.lastName}
+                              className={cn(inputLg, signUpForm.formState.errors.lastName && "border-destructive")}
+                              {...signUpForm.register("lastName")}
                             />
                           </div>
+                          <FieldError message={signUpForm.formState.errors.lastName?.message} />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -365,12 +410,13 @@ export default function AuthPage() {
                             id="signup-password"
                             type="password"
                             autoComplete="new-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="Tối thiểu 8 ký tự"
-                            className={inputLg}
+                            aria-invalid={!!signUpForm.formState.errors.password}
+                            className={cn(inputLg, signUpForm.formState.errors.password && "border-destructive")}
+                            {...signUpForm.register("password")}
                           />
                         </div>
+                        <FieldError message={signUpForm.formState.errors.password?.message} />
                       </div>
                       <div className="space-y-2">
                         <label htmlFor="signup-confirm" className="text-sm font-medium text-foreground">
@@ -382,16 +428,17 @@ export default function AuthPage() {
                             id="signup-confirm"
                             type="password"
                             autoComplete="new-password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Nhập lại mật khẩu"
-                            className={inputLg}
+                            aria-invalid={!!signUpForm.formState.errors.confirmPassword}
+                            className={cn(inputLg, signUpForm.formState.errors.confirmPassword && "border-destructive")}
+                            {...signUpForm.register("confirmPassword")}
                           />
                         </div>
+                        <FieldError message={signUpForm.formState.errors.confirmPassword?.message} />
                       </div>
                       <Button
+                        type="submit"
                         className="h-11 w-full rounded-xl text-base font-semibold"
-                        onClick={onNextSignup}
                         disabled={isPending}
                       >
                         {isPending ? <Loader2 className="size-5 animate-spin" /> : "Tiếp theo"}
@@ -406,18 +453,18 @@ export default function AuthPage() {
                           Đăng nhập
                         </button>
                       </p>
-                    </div>
+                    </form>
                   )}
 
                   {screen === "otp" && (
-                    <div className="space-y-5">
+                    <form className="space-y-5" onSubmit={onOtpSubmit} noValidate>
                       <Button
                         type="button"
                         variant="ghost"
                         className="-ml-2 h-9 gap-1 px-2 text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setScreen("signup");
-                          setOtp("");
+                          otpForm.reset({ otp: "" });
                         }}
                         disabled={isPending}
                       >
@@ -429,27 +476,38 @@ export default function AuthPage() {
                           <KeyRound className="size-4 text-muted-foreground" aria-hidden />
                           Mã OTP
                         </label>
-                        <Input
-                          id="otp"
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                          placeholder="••••••"
-                          maxLength={6}
-                          className="h-14 rounded-xl border-border/70 bg-muted/30 text-center font-mono text-2xl tracking-[0.45em] shadow-none focus-visible:border-primary/40 focus-visible:bg-background focus-visible:ring-primary/20"
+                        <Controller
+                          control={otpForm.control}
+                          name="otp"
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              id="otp"
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              placeholder="••••••"
+                              maxLength={6}
+                              aria-invalid={!!otpForm.formState.errors.otp}
+                              onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
+                              className={cn(
+                                "h-14 rounded-xl border-border/70 bg-muted/30 text-center font-mono text-2xl tracking-[0.45em] shadow-none focus-visible:border-primary/40 focus-visible:bg-background focus-visible:ring-primary/20",
+                                otpForm.formState.errors.otp && "border-destructive"
+                              )}
+                            />
+                          )}
                         />
+                        <FieldError message={otpForm.formState.errors.otp?.message} />
                         <p className="text-xs text-muted-foreground">Mã có 6 chữ số đã gửi tới email của bạn.</p>
                       </div>
                       <Button
+                        type="submit"
                         className="h-11 w-full rounded-xl text-base font-semibold"
-                        onClick={onConfirmOtp}
                         disabled={isPending}
                       >
                         {isPending ? <Loader2 className="size-5 animate-spin" /> : "Xác nhận"}
                       </Button>
-                    </div>
+                    </form>
                   )}
 
                   {screen === "success" && (
@@ -466,6 +524,10 @@ export default function AuthPage() {
                       <Button
                         className="h-11 w-full max-w-xs rounded-xl text-base font-semibold"
                         onClick={() => {
+                          signInForm.setValue("email", signUpForm.getValues("email"));
+                          signInForm.resetField("password");
+                          signUpForm.reset();
+                          otpForm.reset();
                           setScreen("signin");
                           router.push("/auth");
                         }}
