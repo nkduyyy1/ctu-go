@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { sendOtpEmail } from "@/lib/email";
+import { sendOtpEmail, sendPasswordResetOtpEmail } from "@/lib/email";
 import { withActionLog } from "@/lib/server-action-log";
 import { generateOtp, hashOtp } from "@/lib/security";
 import {
+  completePasswordResetSchema,
   completeSignupSchema,
   emailSchema,
   loginSchema,
@@ -33,10 +34,13 @@ export async function completeSignup(input: {
 
   const supabase = await createClient();
   const email = parsed.data.email.toLowerCase().trim();
-  const verifyResult = await verifyOtpToken({
-    email,
-    otp: parsed.data.otp,
-  });
+  const verifyResult = await verifyOtpToken(
+    {
+      email,
+      otp: parsed.data.otp,
+    },
+    "signup"
+  );
 
   if (!verifyResult.success) {
     return verifyResult;
@@ -122,7 +126,10 @@ export async function requestSignupOtp(input: { email: string }) {
   });
 }
 
-async function verifyOtpToken(input: { email: string; otp: string }) {
+async function verifyOtpToken(
+  input: { email: string; otp: string },
+  purpose: "signup" | "password_reset"
+) {
   const parsed = otpSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, message: "OTP không hợp lệ" };
@@ -137,7 +144,7 @@ async function verifyOtpToken(input: { email: string; otp: string }) {
     .from("email_otp_tokens")
     .select("*")
     .eq("email", email)
-    .eq("purpose", "signup")
+    .eq("purpose", purpose)
     .eq("is_active", true)
     .gt("expires_at", now)
     .order("created_at", { ascending: false })
@@ -232,25 +239,118 @@ export async function logoutUser() {
   });
 }
 
-export async function requestResetPassword(input: { email: string }) {
-  return withActionLog("auth/requestResetPassword", async () => {
-  const parsed = emailSchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, message: "Email không hợp lệ" };
-  }
+export async function requestPasswordResetOtp(input: { email: string }) {
+  return withActionLog("auth/requestPasswordResetOtp", async () => {
+    const parsed = emailSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, message: "Email không hợp lệ" };
+    }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: process.env.NEXT_PUBLIC_APP_URL
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth`
-      : undefined,
+    const admin = createServiceRoleClient();
+    if (!admin) {
+      return { success: false, message: "Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY" };
+    }
+
+    const email = parsed.data.email.toLowerCase().trim();
+    const genericMessage =
+      "Nếu email đã đăng ký trong hệ thống, bạn sẽ nhận được mã OTP.";
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (!profile) {
+      return { success: true, message: genericMessage };
+    }
+
+    const otp = generateOtp(6);
+    const otpHash = hashOtp(email, otp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    const { error: deactivateError } = await admin
+      .from("email_otp_tokens")
+      .update({ is_active: false })
+      .eq("email", email)
+      .eq("purpose", "password_reset")
+      .eq("is_active", true);
+
+    if (deactivateError) {
+      return { success: false, message: deactivateError.message };
+    }
+
+    const { error: createError } = await admin.from("email_otp_tokens").insert({
+      email,
+      otp_hash: otpHash,
+      purpose: "password_reset",
+      expires_at: expiresAt,
+      max_attempts: 5,
+      attempt_count: 0,
+      is_active: true,
+    });
+
+    if (createError) {
+      return { success: false, message: createError.message };
+    }
+
+    try {
+      await sendPasswordResetOtpEmail({ email, otp });
+    } catch (error) {
+      console.error("requestPasswordResetOtp sendPasswordResetOtpEmail failed", error);
+      return { success: false, message: "Gửi OTP thất bại" };
+    }
+
+    return { success: true, message: genericMessage };
   });
+}
 
-  if (error) {
-    return { success: false, message: error.message };
-  }
+export async function completePasswordReset(input: {
+  email: string;
+  otp: string;
+  password: string;
+  confirmPassword: string;
+}) {
+  return withActionLog("auth/completePasswordReset", async () => {
+    const parsed = completePasswordResetSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, message: "Thông tin không hợp lệ" };
+    }
 
-  return { success: true, message: "Đã gửi email đặt lại mật khẩu" };
+    const admin = createServiceRoleClient();
+    if (!admin) {
+      return { success: false, message: "Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY" };
+    }
+
+    const email = parsed.data.email.toLowerCase().trim();
+    const verifyResult = await verifyOtpToken({ email, otp: parsed.data.otp }, "password_reset");
+    if (!verifyResult.success) {
+      return verifyResult;
+    }
+
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (profileError) {
+      return { success: false, message: profileError.message };
+    }
+
+    if (!profile) {
+      return { success: false, message: "Không tìm thấy tài khoản" };
+    }
+
+    const { error: updateError } = await admin.auth.admin.updateUserById(profile.id, {
+      password: parsed.data.password,
+    });
+
+    if (updateError) {
+      return { success: false, message: updateError.message };
+    }
+
+    return { success: true, message: "Đã đặt lại mật khẩu" };
   });
 }
 

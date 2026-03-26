@@ -50,6 +50,37 @@ export const completeSignupSchema = z.object({
   otp: z.string().length(6),
 });
 
+export const completePasswordResetFormSchema = z
+  .object({
+    otp: z
+      .string()
+      .min(1, "Nhập mã OTP")
+      .length(6, "Mã OTP phải đủ 6 chữ số")
+      .regex(/^\d+$/, "Chỉ được nhập chữ số"),
+    password: z
+      .string()
+      .min(1, "Vui lòng nhập mật khẩu")
+      .min(8, "Mật khẩu tối thiểu 8 ký tự"),
+    confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu"),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
+
+export const completePasswordResetSchema = z
+  .object({
+    email: z.string().email(),
+    otp: z.string().length(6).regex(/^\d+$/),
+    password: z.string().min(8),
+    confirmPassword: z.string().min(8),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type SignupStepValues = z.infer<typeof signupStepSchema>;
 export type OtpFormValues = z.infer<typeof otpInputSchema>;
+export type CompletePasswordResetFormValues = z.infer<typeof completePasswordResetFormSchema>;
